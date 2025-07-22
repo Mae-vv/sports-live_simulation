@@ -1,0 +1,117 @@
+<!-- Tailwind CSS -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Sports</title>
+    <!-- Inclure Tailwind CSS depuis un CDN (serveur en ligne qui permet de pas installer tailwind CSS) / HTML -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inclure Socket.IO pour des données en temps réel -->
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-center">Live Sports</h1>
+
+        <!-- Tennis Section -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold mb-2">Tennis</h2>
+            <div id="tennis-matches" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Section F1 -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold mb-2">Formula 1</h2>
+            <div id="f1-races" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Section Running -->
+        <section class="mb-8">
+            <h2 class="text-2xl font-semibold mb-2">Running</h2>
+            <div id="running-events" class="grid grid-cols-1 md : grid-cols-2 gap-4"></div>
+        </section>
+    </section>
+    </div>
+
+    <script>
+        // Connexion au serveur Socket.IO / JS
+        const socket = io('http://localhost:3000');
+
+        // Vérifier la connexion Socket.IO
+        socket.on('connect', () => {
+            console.log('Connecté au serveur Socket.IO');
+        });
+        socket.on('connect_error', (error) => {
+            console.error('Erreur de connexion Socket.IO:', error);
+        });
+        
+        // Gérer les mises à jour pour le tennis
+        socket.on('tennisUpdate', (match) => {
+            console.log('Données tennis reçues:', match);
+            const tennisDiv = document.getElementById('tennis-matches') ;
+            if (!tennisDiv) {
+                console.error('Erreur: tennis-matches div non trouvé');
+                return;
+            }
+            const matchElement = document.createElement('div') ;
+            matchElement.className = 'border p-4 rounded-lg shadow bg-white' ;
+            matchElement.innerHTML = `
+                <h3 class="text-xl font-semibold">${match.player1 || 'Joueur 1'} vs ${match.player2 || 'Joueur 2'}</h3>
+                <p>Score: ${match.score || 'Non disponible'}</p>
+                <p>Aces: ${match.stats && match.stats.aces ? match.stats.aces : '0'}</p>
+            `;
+            tennisDiv.innerHTML = ''; // Vide la zone pour ne pas empiler les données
+            tennisDiv.appendChild(matchElement);
+
+            // Notification simple (alerte)
+            if (match.score && match.score === '40-Adv') {
+                alert(`Point de match pour ${match.player1 || 'Joueur 1'} !`);
+            }
+        });
+
+        // Gérer les mises à jour pour la Formula 1
+        socket.on('f1Update', (race) => {
+            const f1Div = document.getElementById('f1-races') ;
+            const raceElement = document.createElement('div') ;
+            raceElement.className = 'border p-4 rounded-lg shadow bg-white' ;
+            raceElement.innerHTML = `
+                <h3 class="text-xl font-semibold">${race.name}</h3>
+                <p>Leader: ${race.leader}<p>
+                <p>Temps au tour: ${race.fastestLap || 'Non disponible'}</p>
+            `;
+            f1Div.innerHTML = '';
+            f1Div.appendChild(raceElement);
+
+            // Notification de dépassement
+            if (race.leader !== 'Verstappen') {
+                alert(`Dépassement ! ${race.leader} est en tête !`)
+            }
+        });
+
+        // Gérer les mises à jour pour la course à pied
+        socket.on('runningUpdate', (event) => {
+            console.log('Données running reçues:', event);
+            const runningDiv = document.getElementById('running-events');
+            if (!runningDiv) {
+                console.error('Erreur: running-events div non trouvé');
+                return;
+            }
+            const eventElement = document.createElement('div') ;
+            eventElement.className = 'border p-4 rounded-lg shadow bg-white' ;
+            eventElement.innerHTML = `
+                <h3 class="text-xl" font-semibold">${event.name}</h3>
+                <p>Coureur: ${event.runner || 'Inconnu'}</p>
+                <p>Allure: ${event.pace || 'Non disponible'} min/km</p>
+            `;
+            runningDiv.innerHTML = '';
+            runningDiv.appendChild(eventElement);
+
+            // Notification pour ravitaillement
+            if (event.pace && parseFloat(event.pace) < 4) {
+                alert(`${event.runner} est à un ravitaillement !`)
+            }
+        })
+    </script>
+</body>
+</html>
